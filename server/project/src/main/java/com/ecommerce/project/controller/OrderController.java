@@ -1,64 +1,64 @@
 package com.ecommerce.project.controller;
 
 import com.ecommerce.project.model.Order;
-import com.ecommerce.project.model.OrderItem;
-import com.ecommerce.project.model.Product;
-import com.ecommerce.project.repo.OrderRepository;
-import com.ecommerce.project.repo.ProductRepository;
-import org.springframework.http.ResponseEntity;
+import com.ecommerce.project.service.OrderService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import com.ecommerce.project.model.User;
+import com.ecommerce.project.repository.UserRepository;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = "http://localhost:5173")
 public class OrderController {
 
-    private final OrderRepository orderRepo;
-    private final ProductRepository productRepo;
+    private final OrderService orderService;
+    @Autowired
+    private UserRepository userRepository;
 
-    public OrderController(OrderRepository orderRepo, ProductRepository productRepo) {
-        this.orderRepo = orderRepo;
-        this.productRepo = productRepo;
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
     }
 
+    @GetMapping
+    public List<Order> getAllOrders() {
+        return orderService.getAllOrders();
+    }
+
+    @GetMapping("/my-orders")
+    public List<Order> getMyOrders(Authentication authentication) {
+        String email = authentication.getName();
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return orderService.getUserOrders(user.getId());
+    }
+
+    @GetMapping("/{id}")
+    public Order getOrderById(@PathVariable Long id) {
+        return orderService.getOrderById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
+    @SuppressWarnings("unchecked")
     @PostMapping("/place")
-    public ResponseEntity<String> placeOrder(@RequestBody Order order) {
-        double totalOrderPrice = 0.0;
+    public Order placeOrder(@RequestBody Map<String, Object> request, Authentication authentication) {
 
-        if (order.getItems() == null || order.getItems().isEmpty()) {
-            return ResponseEntity.badRequest().body("Order must contain at least one product");
-        }
+        String email = authentication.getName();
 
-        for (OrderItem item : order.getItems()) {
-            Product product = productRepo.findById(item.getProduct().getId())
-                    .orElse(null);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (product == null) {
-                return ResponseEntity.badRequest()
-                        .body("Product not found: " + item.getProduct().getId());
-            }
+        List<Map<String, Object>> items = (List<Map<String, Object>>) request.get("items");
 
-            if (item.getQuantity() > product.getStock()) {
-                return ResponseEntity.badRequest()
-                        .body("Insufficient stock for product: " + product.getName());
-            }
-
-            product.setStock(product.getStock() - item.getQuantity());
-            productRepo.save(product);
-
-            item.setTotalPrice(product.getPrice() * item.getQuantity());
-            item.setOrder(order);
-
-            totalOrderPrice += item.getTotalPrice();
-        }
-
-        order.setTotalPrice(totalOrderPrice);
-        orderRepo.save(order);
-
-        return ResponseEntity.ok("Order placed successfully");
+        return orderService.placeOrder(user.getId(), items);
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserOrders(@PathVariable Long userId) {
-        return ResponseEntity.ok(orderRepo.findByUserId(userId));
+    @DeleteMapping("/{id}")
+    public void deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
     }
 }

@@ -1,27 +1,51 @@
-import { useState } from "react";
-import ProductList from "../components/ProductList.jsx";
-import Cart from "../components/Cart.jsx";
+import { useEffect, useState } from "react";
+import { getAllProducts } from "../services/productService";
+import ProductCard from "../components/ProductCard";
+import "../styles/Home.css";
 
-export default function Home() {
-  const [cart, setCart] = useState([]);
+function Home() {
+  const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState("");
 
-  const addToCart = (product) => {
-    setCart(prev => {
-      const exists = prev.find(p => p.id === product.id);
-      if (exists) {
-        return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const data = await getAllProducts();
+      setProducts(data);
+    } catch (err) {
+      console.log("Failed to load products");
+    }
   };
 
-  const clearCart = () => setCart([]);
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="container">
-      <h1>Products</h1>
-      <ProductList addToCart={addToCart} />
-      <Cart cart={cart} clearCart={clearCart} />
+    <div className="home-container">
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="product-grid">
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))
+        ) : (
+          <p>No products found.</p>
+        )}
+      </div>
     </div>
   );
 }
+
+export default Home;

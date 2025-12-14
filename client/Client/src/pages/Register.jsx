@@ -1,30 +1,74 @@
 import { useState } from "react";
+import { registerUser } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import "../styles/Register.css";
 
-import axios from "../api/api.js";
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
-
-export default function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function Register() {
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
     try {
-      await axios.post("/users/register", { email, password });
-      alert("Registration successful! Please login.");
-      navigate("/login");
+      const token = await registerUser(form);
+      await login(token);  
+      navigate("/");
     } catch (err) {
-      alert("Registration failed");
-      console.error(err);
+      alert("Registration failed. Email may already exist.");
     }
   };
 
   return (
-    <div className="container">
-      <h2>Register</h2>
-      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleRegister}>Register</button>
+    <div className="auth-container">
+      <form className="auth-form" onSubmit={handleRegister}>
+        <h2>Create Account</h2>
+
+        <input
+          type="text"
+          name="name"
+          placeholder="Full Name"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Email Address"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
+
+        <button type="submit">Register</button>
+
+        <p onClick={() => navigate("/login")} className="switch-link">
+          Already have an account? Login
+        </p>
+      </form>
     </div>
   );
 }
+
+export default Register;

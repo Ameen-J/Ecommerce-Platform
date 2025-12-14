@@ -1,0 +1,38 @@
+.orders-container {
+  width: 80%;
+  margin: auto;
+  padding-top: 20px;
+}
+
+.order-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+  background: #fff;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.order-items {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.order-item img {
+  width: 60px;
+  height: 60px;
+  margin-right: 12px;
+  object-fit: cover;
+  border-radius: 4px;
+}

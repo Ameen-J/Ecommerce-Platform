@@ -1,40 +1,43 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.exceptions.*;
 import com.ecommerce.project.model.User;
-import com.ecommerce.project.repo.UserRepository;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
+import com.ecommerce.project.service.UserService;
 
-import java.util.Optional;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user) {
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
-        if (existingUser.isPresent()) {
-            return ResponseEntity.badRequest().body("Email already registered");
+    public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
+        try {
+            String token = userService.registerUser(user);
+            return ResponseEntity.ok(Map.of("token", token));
+        } catch (EmailAlreadyExistsException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
         }
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody User loginUser) {
-        Optional<User> user = userRepository.findByEmail(loginUser.getEmail());
 
-        if (user.isPresent() && user.get().getPassword().equals(loginUser.getPassword())) {
-            return ResponseEntity.ok("Login successful");
-        } else {
-            return ResponseEntity.status(401).body("Invalid credentials");
+    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials) {
+        try {
+            String token = userService.loginUser(credentials.get("email"), credentials.get("password"));
+            return ResponseEntity.ok(Map.of("token", token));
+        } catch (InvalidPasswordException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
         }
     }
 }

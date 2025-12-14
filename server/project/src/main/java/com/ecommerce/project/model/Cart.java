@@ -1,28 +1,26 @@
 package com.ecommerce.project.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
-@Table(name = "orders")
-public class Order {
+@Table(name = "cart")
+public class Cart {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @JsonManagedReference
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> items = new ArrayList<>();
 
     private double totalPrice;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<OrderItem> items = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -40,12 +38,12 @@ public class Order {
         this.userId = userId;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public List<CartItem> getItems() {
+        return items;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setItems(List<CartItem> items) {
+        this.items = items;
     }
 
     public double getTotalPrice() {
@@ -54,13 +52,5 @@ public class Order {
 
     public void setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
-    }
-
-    public List<OrderItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<OrderItem> items) {
-        this.items = items;
     }
 }
